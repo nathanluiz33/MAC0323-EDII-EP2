@@ -11,9 +11,19 @@ class Vetor_Ordenado{
     private:
     vector< pair<Key, Item> > v;
 
+    /*
+     * Função: find_first_bigger 
+     * Uso: find_first_bigger(Key key);
+     * -------------------
+     * Esta função acha o menor índice que contém uma chave menor ou igual
+     * a Key key. Caso não tenha um elemento maior ou igual, retorna -1. 
+     * É feita uma busca binária pois o vetor está sempre ordenado, portanto
+     * funciona em O(logN).
+     */
     int find_first_bigger(Key key){
         if(!v.size()) return -1;
-        if(key < v[0].first or v.back().first < key) return -1;
+        if(v.back().first < key) return -1;
+        if(key <= v[0].first) return 0;
 
         int ini = 0, fim = (int) v.size() - 1;
         while(ini <= fim){
@@ -27,16 +37,38 @@ class Vetor_Ordenado{
     public:
     Vetor_Ordenado(){}
 
+    /*
+     * Função: isEmpty 
+     * Uso: isEmpty(Key key);
+     * -------------------
+     * Retorna um booleano se a estrutura está vazia
+     */
     bool isEmpty(){
         return !(v.size());
     }
-
+    
+    /*
+     * Função: contais 
+     * Uso: contais(Key key);
+     * -------------------
+     * Retorna um booleano se a tem a Key key na tabela de símbolos.
+     * Funciona em O(logN).
+     */
     bool contains(Key key){
         int k = find_first_bigger(key);
         if(k == -1) return false;
         return v[k].first == key;
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Key key, Item val);
+     * -------------------
+     * Adiciona o par (key, val) na estrutura. Se já tiver key na tabela,
+     * a função acha o índice da chave e altera o valor - O(logN). Se não tiver,
+     * adicina o par no final do vetor e usa swaps para deixar ordenado. No pior caso
+     * funciona em O(N).
+     */
     void add(Key key, Item val){
         if(!contains(key)){
             v.push_back(make_pair(key, val));
@@ -51,18 +83,40 @@ class Vetor_Ordenado{
         }
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Key key);
+     * -------------------
+     * Acha o Item associado à chave key. Caso a chave não esteja na tabela,
+     * retorna o construtor vazio. Funciona em O(logN).
+     */
     Item value(Key key){
         if(!contains(key)) return Item();
         int k = find_first_bigger(key);
         return v[k].second;
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Key key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor do que key. Utiliza busca
+     * binária, portanto funciona em O(logN). 
+     */
     int rank(Key key){
         if(!v.size() || key < v[0].first) return 0;
         if(v.back().first < key) return v.size();
         return find_first_bigger(key);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(int k);
+     * -------------------
+     * Retorna a chave na posição k. Caso não tenha nenhuma chave nesta posição,
+     * retorna o construtor vazio da chave. Como basta acessar uma posição do vetor,
+     * é em O(1).
+     */
     Key select(int k){
         if(k < 0 or k >= v.size()) return Key();
         return v[k].first;
@@ -72,6 +126,14 @@ class Vetor_Ordenado{
 
 template<class Key, class Item>
 class ABB{
+    /*
+     * Subclasse: Node 
+     * -------------------
+     * Essa subclasse guarda o tipo de nó da árvore. Os atributos 
+     * Node *esq, *dir, *pai são ponteiros que apontam para o filho esquerdo, direito, e pai do nó
+     * atual. Key key e Item val são a chave e item associados ao nó.
+     * int Peso é o tamanho da subárvore do nó. É essencial para melhorar a complexidade de algumas funções.
+     */
     private:
     class Node{
         public:
@@ -95,18 +157,31 @@ class ABB{
             peso = 1;
         }
     }; 
+    // Cada objeto tem sua raiz, que é uma variável global do objeto.
     Node *root;
 
     public:
-
+    // construtor vazio
     ABB(){
         root = new Node();
     }
 
+    /*
+     * Função: isEmpty 
+     * Uso: isEmpty();
+     * -------------------
+     * Retorna um booleano se a tabela de símbolos está vazia. Complexidade O(1)
+     */
     bool isEmpty(){
         return root->peso == 0;
     }
-
+    
+    /*
+     * Função: balancear_peso 
+     * Uso: balancear_peso(Node *raiz);
+     * -------------------
+     * Atualiza o peso do nó *raiz. É necessário que o peso dos filhos estejam corretos. Complexidade O(1)
+     */
     void balancear_peso(Node *raiz){
         int peso_novo = 1;
         if(raiz->esq != NULL) peso_novo += raiz->esq->peso;
@@ -114,26 +189,41 @@ class ABB{
         raiz->peso = peso_novo;
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Node *raiz, Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na subárvore de *raiz. Complexidade O(h), altura da árvore.
+     */
     void add(Node *raiz, Key _key, Item _val){
-        if(raiz->key == _key){
+        if(raiz->key == _key){ // Caso a chave esteja na árvore, apenas alterar o valor
             raiz->val = _val;
         }
-        else if(_key < raiz->key){
-            // vamos para esquerda
-            if(raiz->esq == NULL) raiz->esq = new Node(raiz, _key, _val);
+        else if(_key < raiz->key){ 
+            // Se _key for menor do que a chave do nó, então devemos ir para o filho esquerdo
+            if(raiz->esq == NULL) raiz->esq = new Node(raiz, _key, _val); // Caso não tenha filho esquerdo, criamos um novo nó
             add(raiz->esq, _key, _val);
         }
         else{
-            // vamos para direita
-            if(raiz->dir == NULL) raiz->dir = new Node(raiz, _key, _val);
+            // Se _key for maior do que a chave do nó, então devemos ir para o filho direito
+            if(raiz->dir == NULL) raiz->dir = new Node(raiz, _key, _val); // Caso não tenha filho esquerdo, criamos um novo nó
             add(raiz->dir, _key, _val);
         }
 
+        // Após adicionar a chave, devemos balancear o peso de Node *raiz.
         balancear_peso(raiz);
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) no objeto ABB. 
+     * Basicamente, faz a chamada de add(root, _key, _val). Complexidade O(h).
+     */
     void add(Key _key, Item _val){
         if(root->peso == 0){
+            // primeiro verificamos se o nosso objeto ainda não tem nenhuma chave.
             root->key = _key;
             root->val = _val;
             root->peso = 1;
@@ -141,50 +231,96 @@ class ABB{
         else add(root, _key, _val);
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Node *raiz, Key _key);
+     * -------------------
+     * Procura o Item associado à chave _key na subárvore de *raiz. Caso não exista a chave _key,
+     * retorna o construtor vazio Item(). Complexidade O(h).
+     */
     Item value(Node *raiz, Key _key){
         if(raiz->key == _key) return raiz->val;
         if(_key < raiz->key){
-            // vamos para esquerda
+            // se _key for menor do que a chave do nó, procura na subárvore esquerda
             if(raiz->esq != NULL) return value(raiz->esq, _key);
             else return Item();
         }
         else{
-            // vamos para direita
+            // se _key for maior do que a chave do nó, procura na subárvore direita
             if(raiz->dir != NULL) return value(raiz->dir, _key);
             else return Item();
         }
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Key _key); 
+     * -------------------
+     * Procura o Item associado à chave _key na tabela de símbolos. Complexidade O(h).
+     */
     Item value(Key _key){
         if(root->peso == 0) return Item();
         return value(root, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Node *raiz, Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na subárvore de *raiz. Complexidade O(h)
+     */
     int rank(Node *raiz, Key _key){
         if(raiz == NULL) return 0;
         if(raiz->key < _key){
+            // Se _key for maior que a chave do nó, então todos os nós 
+            // da subárvore esquerda são menor que key
             int quant = 1;
             if(raiz->esq != NULL) quant += raiz->esq->peso;
             return quant + rank(raiz->dir, _key);
         }
+        // Caso contrário, devemos procurar na subárvore esquerda
+        // porque toda a subárvore direita é maior que nó
         else return rank(raiz->esq, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na tabela de símbolos. Complexidade O(h)
+     */
     int rank(Key _key){
         return rank(root, _key);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Node *raiz, Key _key);
+     * -------------------
+     * Retorna k-ésima chave da subávore de Node *raiz, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(Node *raiz, int k){
         int peso_esq = 0;
         if(raiz->esq != NULL) peso_esq = raiz->esq->peso;
+        // caso tenhamos exatamente k - 1 chaves na subárvore esquerda,
+        // então a resposta é o nó atual
         if(k == peso_esq) return raiz->key;
-        
+
+        // verificamos se não existe subárvore esquerda
         if(raiz->esq == NULL) return select(raiz->dir, k - 1);
 
+        // vamos para a subárvore esquerda se ela tem mais de k elementos
         if(raiz->esq->peso - 1 >= k) return select(raiz->esq, k);
+        // caso contrário, vamos para a subárvore direita
         else return select(raiz->dir, k - 1 - raiz->esq->peso);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Key _key);
+     * -------------------
+     * Retorna k-ésima chave da tabela de símbolos, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(int k){
         if(k < 0 || k >= root->peso) return Key();
         return select(root, k);
@@ -195,6 +331,15 @@ class ABB{
 template<class Key, class Item>
 class Treap{
     private:
+    /*
+     * Subclasse: Node 
+     * -------------------
+     * Essa subclasse guarda o tipo de nó da árvore. Os atributos 
+     * Node *esq, *dir, *pai são ponteiros que apontam para o filho esquerdo, direito, e pai do nó
+     * atual. Key key e Item val são a chave e item associados ao nó.
+     * int Peso é o tamanho da subárvore do nó. É essencial para melhorar a complexidade de algumas funções.
+     * long long prioridade é o valor associano ao nó. Nós com prioridades menor devem estar mais próximos da raiz.
+     */
     class Node{
         public:
         Node *esq, *dir, *pai;
@@ -218,16 +363,8 @@ class Treap{
             peso = 1;
             prioridade = rng() % mod;
         }
-
-        void print(){
-            dbg(key);
-            dbg(val);
-            dbg(peso);
-            dbg(prioridade);
-            cout << "\n";
-        }
     }; 
-    
+    // Cada objeto tem sua raiz, que é uma variável global do objeto.
     Node *root;
 
     public:
@@ -235,10 +372,22 @@ class Treap{
         root = new Node();
     }
 
+    /*
+     * Função: isEmpty 
+     * Uso: isEmpty();
+     * -------------------
+     * Retorna um booleano se a tabela de símbolos está vazia. Complexidade O(1)
+     */
     bool isEmpty(){
         return root->peso == 0;
     }
 
+    /*
+     * Função: balancear_peso 
+     * Uso: balancear_peso(Node *raiz);
+     * -------------------
+     * Atualiza o peso do nó *raiz. É necessário que o peso dos filhos estejam corretos. Complexidade O(1)
+     */
     void balancear_peso(Node *raiz){
         int peso_novo = 1;
         if(raiz->esq != NULL) peso_novo += raiz->esq->peso;
@@ -247,11 +396,15 @@ class Treap{
     }
 
     /*
-        A               C
-       / \       ->    / \
-      B   C           A   y
-         / \         / \
-        x   y       B   x
+     * Função rotate_left
+     * Uso: rotate_left(Node *raiz);
+     * --------------------
+     * Rotaciona o nó para a esquerda, como na figura abaixo
+     *   A               C
+     *  / \       ->    / \
+     * B   C           A   y
+     *    / \         / \
+     *   x   y       B   x
     */
     void rotate_left(Node *A){
         Node* C = A->dir;
@@ -271,16 +424,21 @@ class Treap{
         }
         C->esq = A;
         A->pai = C;
+        // após a rotação, é preciso balancear os pesos
         balancear_peso(A);
         balancear_peso(C);
     }
 
     /*
-        A               B
-       / \       ->    / \
-      B   C           x   A
-     / \                 / \
-    x   y               y   C
+     * Função rotate_right
+     * Uso: rotate_right(Node *raiz);
+     * --------------------
+     * Rotaciona o nó para a direita, como na figura abaixo
+     *     A               B
+     *    / \       ->    / \
+     *   B   C           x   A
+     *  / \                 / \
+     * x   y               y   C
     */
     void rotate_right(Node *A){
         Node* B = A->esq;
@@ -298,26 +456,34 @@ class Treap{
         else root = B;
         B->dir = A;
         A->pai = B;
+        // após a rotação, é preciso balancear os pesos
         balancear_peso(A);
         balancear_peso(B);
     }
-
+    
+    /*
+     * Função: add 
+     * Uso: add(Node *raiz, Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na subárvore de *raiz. Complexidade O(h), altura da árvore.
+     */
     void add(Node *raiz, Key _key, Item _val){
-        if(raiz->key == _key){
+        if(raiz->key == _key){ // Caso a chave esteja na árvore, apenas alterar o valor
             raiz->val = _val;
         }
         else if(_key < raiz->key){
-            // vamos para esquerda
+            // Se _key for menor do que a chave do nó, então devemos ir para o filho esquerdo
             if(raiz->esq == NULL) raiz->esq = new Node(raiz, _key, _val);
             add(raiz->esq, _key, _val);
         }
         else{
-            // vamos para direita
+            // Se _key for maior do que a chave do nó, então devemos ir para o filho direito
             if(raiz->dir == NULL) raiz->dir = new Node(raiz, _key, _val);
             add(raiz->dir, _key, _val);
         }
         
         // temos que verificar se as prioridades estao corretas
+        // sendo a menor prioridade sempre em cima
         if(raiz->esq != NULL){
             if(raiz->esq->prioridade < raiz->prioridade)
                 rotate_right(raiz);
@@ -329,6 +495,13 @@ class Treap{
         balancear_peso(raiz);
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na tabela de símbolos. 
+     * Basicamente, faz a chamada de add(root, _key, _val). Complexidade O(h).
+     */
     void add(Key _key, Item _val){
         if(root->peso == 0){
             root->key = _key;
@@ -338,52 +511,98 @@ class Treap{
         }
         else add(root, _key, _val);
     }
-    
+
+    /*
+     * Função: value 
+     * Uso: value(Node *raiz, Key _key);
+     * -------------------
+     * Procura o Item associado à chave _key na subárvore de *raiz. Caso não exista a chave _key,
+     * retorna o construtor vazio Item(). Complexidade O(h).
+     */
     Item value(Node *raiz, Key _key){
         if(raiz->key == _key) return raiz->val;
         if(_key < raiz->key){
-            // vamos para esquerda
+            // se _key for menor do que a chave do nó, procura na subárvore esquerda
             if(raiz->esq != NULL) return value(raiz->esq, _key);
             else return Item();
         }
         else{
-            // vamos para direita
+            // se _key for maior do que a chave do nó, procura na subárvore direita
             if(raiz->dir != NULL) return value(raiz->dir, _key);
             else return Item();
         }
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Key _key); 
+     * -------------------
+     * Procura o Item associado à chave _key na tabela de símbolos. Complexidade O(h).
+     */
     Item value(Key _key){
         if(root->peso == 0) return Item();
         return value(root, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Node *raiz, Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na subárvore de *raiz. Complexidade O(h)
+     */
     int rank(Node *raiz, Key _key){
         if(raiz == NULL) return 0;
         if(raiz->key < _key){
+            // Se _key for maior que a chave do nó, então todos os nós 
+            // da subárvore esquerda são menor que key
             int quant = 1;
             if(raiz->esq != NULL) quant += raiz->esq->peso;
             return quant + rank(raiz->dir, _key);
         }
+        // Caso contrário, devemos procurar na subárvore esquerda
+        // porque toda a subárvore direita é maior que nó
         else return rank(raiz->esq, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na tabela de símbolos. Complexidade O(h)
+     */
     int rank(Key _key){
         return rank(root, _key);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Node *raiz, Key _key);
+     * -------------------
+     * Retorna k-ésima chave da subávore de Node *raiz, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(Node *raiz, int k){
         int peso_esq = 0;
         if(raiz->esq != NULL) peso_esq = raiz->esq->peso;
+        // caso tenhamos exatamente k - 1 chaves na subárvore esquerda,
+        // então a resposta é o nó atual
         if(k == peso_esq) return raiz->key;
-        
+
+        // verificamos se não existe subárvore esquerda
         if(raiz->esq == NULL) return select(raiz->dir, k - 1);
 
+        // vamos para a subárvore esquerda se ela tem mais de k elementos
         if(raiz->esq->peso - 1 >= k) return select(raiz->esq, k);
+        // caso contrário, vamos para a subárvore direita
         else return select(raiz->dir, k - 1 - raiz->esq->peso);
     }
 
 
+    /*
+     * Função: select 
+     * Uso: select(Key _key);
+     * -------------------
+     * Retorna k-ésima chave da tabela de símbolos, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(int k){
         if(k < 0 || k >= root->peso) return Key();
         return select(root, k);
@@ -393,12 +612,20 @@ class Treap{
 template<class Key, class Item>
 class ARN{
     private:
+    /*
+     * Subclasse: Node 
+     * -------------------
+     * Essa subclasse guarda o tipo de nó da árvore. Os atributos 
+     * Node *esq, *dir, *pai são ponteiros que apontam para o filho esquerdo, direito, e pai do nó
+     * atual. Key key e Item val são a chave e item associados ao nó.
+     * int Peso é o tamanho da subárvore do nó. É essencial para melhorar a complexidade de algumas funções.
+     * int cor é cor do nó. 1->preto, 0->vermelho.
+     */
     class Node{
         public:
         Node *esq, *dir, *pai;
         Key key;
         Item val;
-        // cor: 1->preto, 0->vermelho
         int peso, cor;
 
         Node(){
@@ -417,7 +644,8 @@ class ARN{
             cor = 0;
         }
     }; 
-    
+    // Cada objeto tem sua raiz, que é uma variável global do objeto.
+    // NULO é um nó de cor preta que representa o NULL
     Node *root, *NULO;
 
     public:
@@ -428,10 +656,22 @@ class ARN{
         NULO->cor = 1;
     }
 
+    /*
+     * Função: isEmpty 
+     * Uso: isEmpty();
+     * -------------------
+     * Retorna um booleano se a tabela de símbolos está vazia. Complexidade O(1)
+     */
     bool isEmpty(){
         return root->peso == 0;
     }
 
+    /*
+     * Função: balancear_peso 
+     * Uso: balancear_peso(Node *raiz);
+     * -------------------
+     * Atualiza o peso do nó *raiz. É necessário que o peso dos filhos estejam corretos. Complexidade O(1)
+     */
     void balancear_peso(Node *raiz){
         int peso_novo = 1;
         if(raiz->esq != NULO) peso_novo += raiz->esq->peso;
@@ -439,12 +679,17 @@ class ARN{
         raiz->peso = peso_novo;
     }
 
+    
     /*
-        A               C
-       / \       ->    / \
-      B   C           A   y
-         / \         / \
-        x   y       B   x
+     * Função rotate_left
+     * Uso: rotate_left(Node *raiz);
+     * --------------------
+     * Rotaciona o nó para a esquerda, como na figura abaixo
+     *   A               C
+     *  / \       ->    / \
+     * B   C           A   y
+     *    / \         / \
+     *   x   y       B   x
     */
     void rotate_left(Node *A){
         Node* C = A->dir;
@@ -464,17 +709,21 @@ class ARN{
         }
         C->esq = A;
         A->pai = C;
+        // após a rotação, é preciso balancear os pesos
         balancear_peso(A);
         balancear_peso(C);
-        // return A;
     }
 
     /*
-        A               B
-       / \       ->    / \
-      B   C           x   A
-     / \                 / \
-    x   y               y   C
+     * Função rotate_right
+     * Uso: rotate_right(Node *raiz);
+     * --------------------
+     * Rotaciona o nó para a direita, como na figura abaixo
+     *     A               B
+     *    / \       ->    / \
+     *   B   C           x   A
+     *  / \                 / \
+     * x   y               y   C
     */
     void rotate_right(Node *A){
         Node* B = A->esq;
@@ -492,24 +741,33 @@ class ARN{
         else root = B;
         B->dir = A;
         A->pai = B;
+        // após a rotação, é preciso balancear os pesos
         balancear_peso(A);
         balancear_peso(B);
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Node *raiz, Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na subárvore de *raiz. Complexidade O(logN), altura da árvore.
+     */
     void add(Node *raiz, Key _key, Item _val){
         if(raiz->key == _key){
             raiz->val = _val;
         }
         else if(_key < raiz->key){
-            // vamos para esquerda
+            // Se _key for menor do que a chave do nó, então devemos ir para o filho esquerdo
             if(raiz->esq == NULO){
                 raiz->esq = new Node(raiz, _key, _val);
+                // sempre que criamos um novo nó, devemos fazer seus
+                // filhos serem NULO, a variável global
                 raiz->esq->esq = raiz->esq->dir = NULO;
             }
             add(raiz->esq, _key, _val);
         }
         else{
-            // vamos para direita
+            // Se _key for menor do que a chave do nó, então devemos ir para o filho esquerdo
             if(raiz->dir == NULO){
                 raiz->dir = new Node(raiz, _key, _val);
                 raiz->dir->esq = raiz->dir->dir = NULO;
@@ -517,17 +775,17 @@ class ARN{
             add(raiz->dir, _key, _val);
         }
 
-        // temos que preservar as propriedades da árvore rubro-negra
+        // temos que preservar as propriedades da árvore rubro-negra, em que vértices de cor vermelha
+        // só tem filhos de cor preta
         
         Node* p = raiz->pai;
-
         if(raiz->cor == 0 and p->cor == 0){
             // se o nó atual e o pai forem vermelhos
-            // temos que garantir que root e NULO sao sempre pretos!
-            assert(p->pai != NULO and p != NULO);
+            assert(p->pai != NULO and p != NULO); // temos que garantir que root e NULO sao sempre pretos!
 
+            // caso o pai seja filho esquerdo do avô 
             if(p == p->pai->esq){
-                Node* y = p->pai->dir;
+                Node* y = p->pai->dir; // tio do nó atual
                 // se y for vermelho, podemos pintar p e y de pretos, e p->pai vermelho
                 if(y->cor == 0){
                     p->cor = 1;
@@ -536,27 +794,32 @@ class ARN{
                 }
                 else{
                     if(raiz == p->dir){
-                        // devemos rotacionar para esquerda
+                        // se o nó é filho direito do pai, devemos rotacionar para esquerda
                         raiz = p;
                         rotate_left(raiz);
                     }
+                    // pintamos o pai de preto e o avo de vermelho
                     raiz->pai->cor = 1;
                     raiz->pai->pai->cor = 0;
+                    // rotacinamos para direita
                     rotate_right(raiz->pai->pai);
                 } 
             } 
-            else{
-                Node* y = p->pai->esq;
+            else{ // caso o pai seja filho direito do avô.
+                Node* y = p->pai->esq; // tio do nó atual
                 if(y->cor == 0){
+                    // se y for vermelho, podemos pintar p e y de pretos, e p->pai vermelho
                     p->cor = 1;
                     y->cor = 1;
                     p->pai->cor = 0;
                 }
                 else{
                     if(raiz == p->esq){
+                        // se o nó é filho esquerdo do pai, devemos rotacionar para direita
                         raiz = p;
                         rotate_right(raiz);
                     }
+                    // pintamos o pai de preto e o avo de vermelho
                     raiz->pai->cor = 1;
                     raiz->pai->pai->cor = 0;
                     rotate_left(raiz->pai->pai);
@@ -566,6 +829,13 @@ class ARN{
         balancear_peso(raiz);
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na tabela de símbolos. 
+     * Basicamente, faz a chamada de add(root, _key, _val). Complexidade O(logN).
+     */
     void add(Key _key, Item _val){
         if(root->peso == 0){
             root->key = _key;
@@ -575,54 +845,101 @@ class ARN{
             root->esq = root->dir = NULO;
         }
         else add(root, _key, _val);
+        // utilizamos a convencao de a raiz ter sempre cor preta
         if(root->cor == 0) root->cor = 1;
         assert(root->cor == 1);
     }
     
+    /*
+     * Função: value 
+     * Uso: value(Node *raiz, Key _key);
+     * -------------------
+     * Procura o Item associado à chave _key na subárvore de *raiz. Caso não exista a chave _key,
+     * retorna o construtor vazio Item(). Complexidade O(h).
+     */
     Item value(Node *raiz, Key _key){
         if(raiz->key == _key) return raiz->val;
         if(_key < raiz->key){
-            // vamos para esquerda
+            // se _key for menor do que a chave do nó, procura na subárvore esquerda
             if(raiz->esq != NULO) return value(raiz->esq, _key);
             else return Item();
         }
         else{
-            // vamos para direita
+            // se _key for maior do que a chave do nó, procura na subárvore direita
             if(raiz->dir != NULO) return value(raiz->dir, _key);
             else return Item();
         }
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Key _key); 
+     * -------------------
+     * Procura o Item associado à chave _key na tabela de símbolos. Complexidade O(h).
+     */
     Item value(Key _key){
         if(root->peso == 0) return Item();
         return value(root, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Node *raiz, Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na subárvore de *raiz. Complexidade O(h)
+     */
     int rank(Node *raiz, Key _key){
         if(raiz == NULO) return 0;
         if(raiz->key < _key){
+            // Se _key for maior que a chave do nó, então todos os nós 
+            // da subárvore esquerda são menor que key
             int quant = 1;
             if(raiz->esq != NULO) quant += raiz->esq->peso;
             return quant + rank(raiz->dir, _key);
         }
+        // Caso contrário, devemos procurar na subárvore esquerda
+        // porque toda a subárvore direita é maior que nó
         else return rank(raiz->esq, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na tabela de símbolos. Complexidade O(h)
+     */
     int rank(Key _key){
         return rank(root, _key);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Node *raiz, Key _key);
+     * -------------------
+     * Retorna k-ésima chave da subávore de Node *raiz, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(Node *raiz, int k){
         int peso_esq = 0;
         if(raiz->esq != NULO) peso_esq = raiz->esq->peso;
+        // caso tenhamos exatamente k - 1 chaves na subárvore esquerda,
+        // então a resposta é o nó atual
         if(k == peso_esq) return raiz->key;
         
+        // verificamos se não existe subárvore esquerda
         if(raiz->esq == NULO) return select(raiz->dir, k - 1);
 
+        // vamos para a subárvore esquerda se ela tem mais de k elementos
         if(raiz->esq->peso - 1 >= k) return select(raiz->esq, k);
+        // caso contrário, vamos para a subárvore direita
         else return select(raiz->dir, k - 1 - raiz->esq->peso);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Key _key);
+     * -------------------
+     * Retorna k-ésima chave da tabela de símbolos, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(int k){
         if(k < 0 || k >= root->peso) return Key();
         return select(root, k);
@@ -632,9 +949,18 @@ class ARN{
 template<class Key, class Item>
 class A23{
     private:
+    /*
+     * Subclasse: Node 
+     * -------------------
+     * Essa subclasse guarda o tipo de nó da árvore. Os atributos 
+     * Node *esq, *meio, *dir, *pai são ponteiros que apontam para o filho esquerdo, meio, direito, e pai do nó
+     * atual. Key key e Item val são a chave e item associados ao nó.
+     * int Peso é o tamanho da subárvore do nó. É essencial para melhorar a complexidade de algumas funções.
+     * bool node_2 é uma variável que identifica se o nó tem 2 ou 3 filhos. Caso tenha somente 2 filhos,
+     * o ponteiro *dir será sempre NULL.
+     */
     class Node{
         public:
-        // se dir == NULL, entao o no tem 1 elemento somente
         Node *esq, *dir, *meio, *pai;
         Key key_l, key_r;
         Item val_l, val_r;
@@ -660,7 +986,9 @@ class A23{
             node_2 = 1;
         }
     }; 
-    
+    // Cada objeto tem sua raiz, que é uma variável global do objeto.
+    // O ponteiro subiu é uma variável que ajuda na inserção do elemento.
+    // Quando um nó fica saturado, então ele sobe por esse ponteiro.
     Node *root, *subiu;
 
     public:
@@ -669,10 +997,21 @@ class A23{
         subiu = new Node();
     }
 
+    /*
+     * Função: isEmpty 
+     * Uso: isEmpty();
+     * -------------------
+     * Retorna um booleano se a tabela de símbolos está vazia. Complexidade O(1)
+     */
     bool isEmpty(){
         return root->peso == 0;
     }
-
+    /*
+     * Função: balancear_peso 
+     * Uso: balancear_peso(Node *raiz);
+     * -------------------
+     * Atualiza o peso do nó *raiz. É necessário que o peso dos filhos estejam corretos. Complexidade O(1)
+     */
     void balancear_peso(Node *raiz){
         int peso_novo = 1;
         if(!raiz->node_2) peso_novo++;
