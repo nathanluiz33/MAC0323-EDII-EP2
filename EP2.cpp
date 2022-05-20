@@ -767,7 +767,7 @@ class ARN{
             add(raiz->esq, _key, _val);
         }
         else{
-            // Se _key for menor do que a chave do nó, então devemos ir para o filho esquerdo
+            // Se _key for maior do que a chave do nó, então devemos ir para o filho direito
             if(raiz->dir == NULO){
                 raiz->dir = new Node(raiz, _key, _val);
                 raiz->dir->esq = raiz->dir->dir = NULO;
@@ -1006,6 +1006,7 @@ class A23{
     bool isEmpty(){
         return root->peso == 0;
     }
+
     /*
      * Função: balancear_peso 
      * Uso: balancear_peso(Node *raiz);
@@ -1014,14 +1015,23 @@ class A23{
      */
     void balancear_peso(Node *raiz){
         int peso_novo = 1;
+        // se o nó tem 2 elementos, devemos somar 1 no peso
         if(!raiz->node_2) peso_novo++;
         if(raiz->esq != NULL) peso_novo += raiz->esq->peso;
         if(raiz->meio != NULL) peso_novo += raiz->meio->peso;
-        // se o nó tem 2 elementos, devemos somar 1 no peso
         if(raiz->dir != NULL) peso_novo += raiz->dir->peso;
         raiz->peso = peso_novo;
     }
-
+    /*
+     * Função: fix_node 
+     * Uso: fix_node(Node *raiz, int tipo);
+     * -------------------
+     * Esta função merge o nó raiz com o nó subiu. Se o nó que sobe vem 
+     * da esquerda, tipo = 0. Se vem do meio, tipo = 1. E se vem da direita,
+     * tipo = 2. Caso o nó atual esteja saturado também, a função atualiza o nó
+     * atual e o nó subiu. Essa função funciona em O(1) e é essencial para manter
+     * as propriedades da árvore 23.
+     */
     void fix_node(Node *raiz, int tipo){
         // tipo 0 -> vem da esquerda
         if(tipo == 0){
@@ -1039,6 +1049,7 @@ class A23{
                 balancear_peso(raiz);
                 subiu = NULL;
             }
+            // se o nó não estiver livre
             else{
                 Node *esq = new Node(subiu, subiu->key_l, subiu->val_l), *dir = new Node(subiu, raiz->key_r, raiz->val_r);
 
@@ -1061,8 +1072,9 @@ class A23{
                 balancear_peso(subiu);
             }
         }
-        // se vem do meio
+        // tipo 1 -> vem do meio
         else if(tipo == 1){
+            // se o nó estiver livre
             if(raiz->node_2){
                 raiz->meio = subiu->esq;
                 raiz->dir = subiu->meio;
@@ -1072,6 +1084,7 @@ class A23{
                 balancear_peso(raiz);
                 subiu = NULL;
             }
+            // se o nó não estiver livre
             else{
                 Node *esq = new Node(subiu, raiz->key_l, raiz->val_l), *dir = new Node(subiu, raiz->key_r, raiz->val_r);
 
@@ -1092,8 +1105,9 @@ class A23{
                 balancear_peso(subiu);
             }
         }
-        // se vem de dir
+        // tipo 2 -> vem da direita
         else{
+            // se vem da direita, o nó atual com certeza tem 2 elementos.
             assert(!raiz->node_2);
             Node *esq = new Node(subiu, raiz->key_l, raiz->val_l), *dir = new Node(subiu, subiu->key_l, subiu->val_l);
 
@@ -1117,29 +1131,35 @@ class A23{
         }
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Node *raiz, Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na subárvore de *raiz. Complexidade O(logN), altura da árvore.
+     */
     void add(Node *raiz, Key _key, Item _val){
         if(raiz->key_l == _key)
             raiz->val_l = _val;
         else if(!(raiz->node_2) && raiz->key_r == _key)
             raiz->val_r = _val;
         else if(_key < raiz->key_l){
-            // vamos para esquerda
+            // Se _key for menor do que a chave esquerda do nó, então devemos ir para o filho esquerdo
             if(raiz->esq == NULL){
-                // se estiver cheio, devemos subir
+                // se for uma folha, devemos atualizar subiu
                 subiu = new Node(raiz->pai, _key, _val);
             }
             else{
                 add(raiz->esq, _key, _val);
             }
+            // caso o nó que subiu não seja NULL, devemos mergir com o atual
             if(subiu != NULL)
                 fix_node(raiz, 0);
         }
         else if(!(raiz->node_2) && raiz->key_r < _key){
-            // vamos para direita
             if(raiz->dir == NULL)
                 subiu = new Node(raiz->pai, _key, _val);
             else add(raiz->dir, _key, _val);
-            // dbg("AQUI");
+            // caso o nó que subiu não seja NULL, devemos mergir com o atual
             if(subiu != NULL)
                 fix_node(raiz, 2);
         }
@@ -1149,14 +1169,20 @@ class A23{
             }
             else
                 add(raiz->meio, _key, _val);
+            // caso o nó que subiu não seja NULL, devemos mergir com o atual
             if(subiu != NULL)
                 fix_node(raiz, 1);
         }
-
         balancear_peso(raiz);
-        // temos que preservar as propriedades da árvore 23
     }
 
+    /*
+     * Função: add 
+     * Uso: add(Key _key, Item _val);
+     * -------------------
+     * Adiciona o par (_key, _val) na tabela de símbolos. 
+     * Basicamente, faz a chamada de add(root, _key, _val). Complexidade O(logN).
+     */
     void add(Key _key, Item _val){
         if(root->peso == 0){
             root->key_l = _key;
@@ -1166,16 +1192,23 @@ class A23{
         }
         else{
             add(root, _key, _val);
+            // se o nó que subiu não é NULL, devemos atualizar a raiz
             if(subiu != NULL){
                 root = subiu;
                 root->pai = NULL;
                 subiu = NULL;
             }
             balancear_peso(root);
-            // dbg(root->key_l);
         }
     }
     
+    /*
+     * Função: value 
+     * Uso: value(Node *raiz, Key _key);
+     * -------------------
+     * Procura o Item associado à chave _key na subárvore de *raiz. Caso não exista a chave _key,
+     * retorna o construtor vazio Item(). Complexidade O(h).
+     */
     Item value(Node *raiz, Key _key){
         if(raiz->key_l == _key) return raiz->val_l;
         if(!raiz->node_2 && raiz->key_r == _key) return raiz->val_r;
@@ -1190,16 +1223,29 @@ class A23{
             else return Item();
         }
         else{
+            // vamos pro meio
             if(raiz->meio != NULL) return value(raiz->meio, _key);
             else return Item();
         }
     }
 
+    /*
+     * Função: value 
+     * Uso: value(Key _key); 
+     * -------------------
+     * Procura o Item associado à chave _key na tabela de símbolos. Complexidade O(h).
+     */
     Item value(Key _key){
         if(root->peso == 0) return Item();
         return value(root, _key);
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Node *raiz, Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na subárvore de *raiz. Complexidade O(h)
+     */
     int rank(Node *raiz, Key _key){
         if(raiz == NULL) return 0;
         if(_key <= raiz->key_l){
@@ -1218,10 +1264,22 @@ class A23{
         }
     }
 
+    /*
+     * Função: rank 
+     * Uso: rank(Key _key);
+     * -------------------
+     * Retorna a quantidade de chaves estritamente menor que _key na tabela de símbolos. Complexidade O(h)
+     */
     int rank(Key _key){
         return rank(root, _key);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Node *raiz, Key _key);
+     * -------------------
+     * Retorna k-ésima chave da subávore de Node *raiz, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(Node *raiz, int k){
         if(raiz->esq == NULL){
             if(k == 0) return raiz->key_l;
@@ -1235,6 +1293,12 @@ class A23{
         else return select(raiz->dir, k - 2 - raiz->esq->peso - raiz->meio->peso);
     }
 
+    /*
+     * Função: select 
+     * Uso: select(Key _key);
+     * -------------------
+     * Retorna k-ésima chave da tabela de símbolos, sendo a menor chave a chave 0. Complexidade O(h).
+     */
     Key select(int k){
         if(k < 0 || k >= root->peso) return Key();
         return select(root, k);
